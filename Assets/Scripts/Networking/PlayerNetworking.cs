@@ -12,7 +12,7 @@ public class PlayerNetworking
 
     public static int playerNamesEvent;
 
-    static Func<PlayerMain, byte[]>[] PlayerOutEvents = new Func<PlayerMain, byte[]>[128];
+    static Func<PlayerNetworking, byte[]>[] PlayerOutEvents = new Func<PlayerNetworking, byte[]>[128];
     static int[] PlayerOEventSizes = new int[128];
     static Action<int, byte[]>[] PlayerInEvents = new Action<int, byte[]>[128];
     static int[] PlayerIEventSizes = new int[128];
@@ -23,9 +23,15 @@ public class PlayerNetworking
     public int id;
 
 
+    public static void Setup()
+	{
+        playerEventEvent = NetworkingMain.RegisterPacketType(EventProcessor);
+        playerEventRelayEvent = NetworkingMain.RegisterPacketType(EventRelayProcessor);
+	}
+
 
     // Adds event to fire
-    static public int AddPlayerOutEvent(Func<PlayerMain, byte[]> function, int ArraySize)
+    static public int AddPlayerOutEvent(Func<PlayerNetworking, byte[]> function, int ArraySize)
     {
         PlayerOutEvents[PlayerOEvents] = function;
         PlayerOEventSizes[PlayerOEvents] = ArraySize;
@@ -40,7 +46,7 @@ public class PlayerNetworking
         PlayerIEventSizes[PlayerIEvents] = ArraySize;
         PlayerIEvents++;
     }
-    static public void FirePlayerEvent(int ev, PlayerMain pm, bool important = true)
+    static public void FirePlayerEvent(int ev, PlayerNetworking pm, bool important = true)
     {
         //byte[] outarray = new byte[PlayerOEventSizes[ev] + 4];
         byte[] ou = PlayerOutEvents[ev](pm);

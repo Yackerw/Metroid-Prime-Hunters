@@ -4,7 +4,7 @@ using UnityEngine;
 using System;
 using System.Linq;
 
-/*public class MetNet : MonoBehaviour
+public class MetNet : MonoBehaviour
 {
 
 	public static List<NetObj> netObjects = new List<NetObj>();
@@ -20,6 +20,8 @@ using System.Linq;
 		NetworkingMain.GameLayerJoinReceive = JoinRecv;
 		NetworkingMain.GameLayerDisconnect = Disconnect;
 		DontDestroyOnLoad(gameObject);
+		PlayerNetworking.Setup();
+		ObjectNetworking.Setup();
 	}
 
 	static private void JoinSend(int node)
@@ -43,17 +45,13 @@ using System.Linq;
 
 	static private void JoinRecv()
 	{
-		PlayerNetworking.FirePlayerEvent(PlayerNetworkEvents.nameEvent, null);
+		//PlayerNetworking.FirePlayerEvent(PlayerNetworkEvents.nameEvent, null);
 	}
 
 	static private void OtherJoinRecv(int node)
 	{
 		// create new joiners object
-		PlayerMain.playerObjects[node] = GameObject.Instantiate(Resources.Load<GameObject>("PlayerPrefab"));
-		PlayerMain.playerObjects[node].GetComponent<PlayerMain>().playerType = 1;
-		PlayerMain.playerObjects[node].GetComponent<PlayerMain>().playerID = node;
-		Chat.LogMessage(String.Concat("A player has joined on node ", node.ToString()), true);
-		PlayerNetworking.names[node] = "Player";
+		PlayerNetworking.netPlayers[node].name = "Player";
 	}
 
 	static string LogDisconnectReason(int reason)
@@ -87,50 +85,7 @@ using System.Linq;
 
 	static private void Disconnect(int node, int reason)
 	{
-		// cleanup sending them a file
-		PlayerNetworking.players[node] = new PlayerNetworking.NetPlayer();
-		// in-game cleanup or what ever goes here
-		if (JourneyManager.sceneType == 2 && PlayerMain.playerObjects[node] != null)
-		{
-			// clean up culling groups
-			PlayerMain pm = PlayerMain.playerObjects[node].GetComponent<PlayerMain>();
-			if (pm != null)
-			{
-				for (int i = 0; i < pm.cullingGroups.Count; ++i)
-				{
-					pm.cullingGroups[i].RemovePlayer();
-				}
-			}
-			// adjust spectating if necessary
-			if (PlayerMain.spectater == node)
-			{
-				PlayerMain.UnSpectate();
-				++PlayerMain.spectater;
-				PlayerMain.Spectate();
-			}
-			// destroy the object
-			Destroy(PlayerMain.playerObjects[node]);
-		}
-		string discreas = LogDisconnectReason(reason);
-		// return to menu
-		if (node == NetworkingMain.ClientNode && NetworkingMain.Host == 0)
-		{
-			NetworkingMain.ClientNode = -1;
-			if (reason != 4)
-			{
-				MenuManager.ReturnToMenu("MultiplayerDisconnect", discreas);
-			}
-			else
-			{
-				MenuManager.ReturnToMenu("MultiplayerLeave");
-			}
-			return;
-		}
-		// log their disconnection lol
-		if (node != NetworkingMain.ClientNode)
-		{
-			Chat.LogMessage(string.Concat(PlayerNetworking.names[node], " was disconnected, reason: ", discreas));
-		}
+		
 	}
 
 	public static void SyncObject(NetObj obj, int id, int node = -1)
@@ -158,7 +113,7 @@ using System.Linq;
 		Array.Copy(BitConverter.GetBytes(tr.rotation.y), 0, ou, asset.Length + 5 + 16, 4);
 		Array.Copy(BitConverter.GetBytes(tr.rotation.z), 0, ou, asset.Length + 5 + 20, 4);
 		Array.Copy(BitConverter.GetBytes(tr.rotation.w), 0, ou, asset.Length + 5 + 24, 4);
-		Array.Copy(BitConverter.GetBytes(obj.cullingGroup), 0, ou, asset.Length + 5 + 28, 4);
+		Array.Copy(BitConverter.GetBytes(obj.parent), 0, ou, asset.Length + 5 + 28, 4);
 		if (node == -1)
 		{
 			NetworkingMain.Packet_Send(ou, ou.Length, ObjectNetworking.objCreateEvent, true);
@@ -224,7 +179,7 @@ using System.Linq;
 						{
 							dist *= dist;
 							// TODO: update to account for spectating
-							for (int i2 = 0; i2 < NetworkingMain.ClientsUsed.Length; ++i2)
+							/*for (int i2 = 0; i2 < NetworkingMain.ClientsUsed.Length; ++i2)
 							{
 								GameObject po = PlayerMain.playerObjects[i2];
 								if (po != null && NetworkingMain.ClientsUsed[i2])
@@ -236,7 +191,7 @@ using System.Linq;
 										NetworkingMain.Packet_SendTo(retval, retval.Length, ObjectNetworking.objStepEvent, i2);
 									}
 								}
-							}
+							}*/
 						}
 					}
 				}
@@ -244,7 +199,7 @@ using System.Linq;
 
 			// sync custom networked objects
 			// should really change this part to a different function
-			for (int i = 0; i < CullingManager.syncObjects.Count; ++i)
+			/*for (int i = 0; i < CullingManager.syncObjects.Count; ++i)
 			{
 				if (CullingManager.syncObjects[i] != null && CullingManager.syncObjects[i].gameObject.activeInHierarchy)
 				{
@@ -346,7 +301,7 @@ using System.Linq;
 						}
 					}
 				}
-			}
+			}*/
 		}
 	}
 
@@ -354,12 +309,5 @@ using System.Linq;
 	private void Update()
 	{
 		NetworkingMain.Update();
-
-		// don't wanna add this anywhere to networkingmain but i want IP address so
-		if (IP == "" && NetworkingMain.Host == 1)
-		{
-			IP = new System.Net.WebClient().DownloadString("http://icanhazip.com");
-			IP = IP.Substring(0, IP.Length - 1);
-		}
 	}
-}*/
+}

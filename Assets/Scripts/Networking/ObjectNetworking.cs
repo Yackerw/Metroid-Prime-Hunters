@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-/*public class ObjectNetworking {
+public class ObjectNetworking {
 
 	static public int objStepEvent;
 	static public int objCreateEvent;
@@ -43,7 +43,7 @@ using System;
 		}
 	}*/
 
-	/*static private void ObjectStep(byte[] packet, int node)
+	static private void ObjectStep(byte[] packet, int node)
 	{
 		if (NetworkingMain.Host != 1)
 		{
@@ -85,12 +85,11 @@ using System;
 
 	static private void ObjectDestroy(byte[] packet, int node)
 	{
-		if (NetworkingMain.Host != 1 /*&& JourneyManager.sceneType == 2*///)
-		/*{
+		if (NetworkingMain.Host != 1 /*&& JourneyManager.sceneType == 2*/)
+		{
 			int id = BitConverter.ToInt32(packet, 0);
 			MetNet.netObjects[id].NetClose();
 			MetNet.netObjects[id] = null;
 		}
 	}
 }
-*/

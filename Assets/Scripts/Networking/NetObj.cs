@@ -4,7 +4,7 @@ using System;
 using UnityEngine;
 
 // DON'T USE THIS. THIS IS ONLY MEANT TO BE A BASE SCRIPT, WITH EXAMPLE FUNCTIONS.
-/*public class NetObj : MonoBehaviour
+public class NetObj : MonoBehaviour
 {
 
     public int id = -1;
@@ -117,4 +117,3 @@ using UnityEngine;
     }
 }
 
-*/
