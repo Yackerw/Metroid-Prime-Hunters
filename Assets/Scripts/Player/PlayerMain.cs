@@ -101,8 +101,8 @@ public class PlayerMain : MonoBehaviour
         camera.rotation = Quaternion.Euler(ycam, xcam, 0);
         transform.rotation = Quaternion.Euler(0, xcam, 0);
         camera.position = camerapos.position;
-        speed.x = Mathf.Clamp(speed.x, -15, 15); //speed cap. with clamp magic 
-        speed.z = Mathf.Clamp(speed.z, -15, 15);
+        speed.x = Mathf.Clamp(speed.x, -10, 10); //speed cap. with clamp magic 
+        speed.z = Mathf.Clamp(speed.z, -10, 10);
 
         // handle gravity
         if (onGround)
@@ -111,12 +111,12 @@ public class PlayerMain : MonoBehaviour
             canJump = true;
 		} else
 		{
-            speed.y = Mathf.Max(speed.y -= 10.0f * Time.deltaTime, -20.0f);
+            speed.y = Mathf.Max(speed.y -= 14.0f * Time.deltaTime, -20.0f);
 		}
 
         if (canJump && Input.GetButtonDown("Jump"))
         {
-            speed.y = 10.0f;
+            speed.y = 9.0f;
             canJump = false;
         }
 
