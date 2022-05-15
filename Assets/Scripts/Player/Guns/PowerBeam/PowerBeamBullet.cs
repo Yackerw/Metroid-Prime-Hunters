@@ -8,7 +8,6 @@ public class PowerBeamBullet : Bullet
 
 	private void OnCollisionEnter(Collision collision)
 	{
-        Debug.Log(collision.gameObject);
         // kill ourselves, spawn "bullet hit" graphic
         Destroy(gameObject);
         GameObject hit = Instantiate((GameObject)Resources.Load("Objects/Bullets/PowerBeam/PowerBeamHit"));

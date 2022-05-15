@@ -10,6 +10,7 @@ public class PlayerMain : MonoBehaviour
     public float ycam;
     Transform camera;
     public Transform camerapos;
+    public CapsuleCollider myCollider;
 
     bool onGround;
     bool canJump;
@@ -36,7 +37,13 @@ public class PlayerMain : MonoBehaviour
         currentWeapon = new PowerBeam();
     }
 
-    private void OnCollisionStay(Collision collision)
+	private void OnCollisionEnter(Collision collision)
+	{
+        // i hate unity i hate unity i hate unity
+        collision.collider.sharedMaterial = myCollider.sharedMaterial;
+	}
+
+	private void OnCollisionStay(Collision collision)
     {
         if (Vector3.Dot(collision.contacts[0].normal, Vector3.up) >= Mathf.Cos(FLOOR_ANGLE*Mathf.Deg2Rad) && speed.y <= 0)
 		{
@@ -126,10 +133,13 @@ public class PlayerMain : MonoBehaviour
         gunRotation.y = Mathf.Clamp(gunRotation.y, -15.0f, 15.0f);
         gunHolder.rotation = Quaternion.Euler(gunRotation.y, gunRotation.x, 0);
         // bob up and down
-        float gunBobber = new Vector3(speed.x, speed.z, 0).magnitude * Time.deltaTime * 0.5f;
-        gunBob += gunBobber;
-        gunBob %= Mathf.PI * 2;
-        gunHolder.position = baseGunPos - new Vector3(0, Mathf.Sin(gunBob) * 0.03f, 0);
+        if (onGround)
+        {
+            float gunBobber = new Vector3(speed.x, speed.z, 0).magnitude * Time.deltaTime * 0.5f;
+            gunBob += gunBobber;
+            gunBob %= Mathf.PI * 2;
+            gunHolder.position = baseGunPos - new Vector3(0, Mathf.Sin(gunBob) * 0.03f, 0);
+        }
 
 
         // handle our weapon

@@ -33,7 +33,6 @@ public class PowerBeam : Gun
 	{
 		fireTimer = 0;
 		// fire a shot initially
-		Debug.Log(timeSinceRelease);
 		if (timeSinceRelease <= 0)
 		{
 			FireShot(player, 0);
@@ -64,7 +63,10 @@ public class PowerBeam : Gun
 
 	public override void ReleaseFire(PlayerMain player)
 	{
-		timeSinceRelease = 0.2f;
+		if (timeSinceRelease <= 0)
+		{
+			timeSinceRelease = 0.2f;
+		}
 	}
 
 	public override void SwitchWeapon(PlayerMain player)
