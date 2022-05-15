@@ -37,12 +37,6 @@ public class PlayerMain : MonoBehaviour
         currentWeapon = new PowerBeam();
     }
 
-	private void OnCollisionEnter(Collision collision)
-	{
-        // i hate unity i hate unity i hate unity
-        collision.collider.sharedMaterial = myCollider.sharedMaterial;
-	}
-
 	private void OnCollisionStay(Collision collision)
     {
         if (Vector3.Dot(collision.contacts[0].normal, Vector3.up) >= Mathf.Cos(FLOOR_ANGLE*Mathf.Deg2Rad) && speed.y <= 0)
