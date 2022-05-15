@@ -6,8 +6,8 @@ public class PlayerMain : MonoBehaviour
 {
     Rigidbody player;
     public Vector3 speed;
-    float xcam;
-    float ycam;
+    public float xcam;
+    public float ycam;
     Transform camera;
     public Transform camerapos;
 
@@ -18,14 +18,22 @@ public class PlayerMain : MonoBehaviour
     Vector2 gunRotation = new Vector2();
     float gunBob;
     Vector3 baseGunPos;
+    public GameObject armCannon;
+
+    public AudioSource gunSource;
+    public AudioSource gunLoopSource;
 
     const float FLOOR_ANGLE = 55.0f;
+
+    Gun currentWeapon;
+    bool holdingFire;
     // Start is called before the first frame update
     void Start()
     {
         player=GetComponent<Rigidbody>();
         camera = Camera.main.transform; //.main gets the camera, .transform gets the transform of the camera
         baseGunPos = gunHolder.position;
+        currentWeapon = new PowerBeam();
     }
 
     private void OnCollisionStay(Collision collision)
@@ -34,6 +42,11 @@ public class PlayerMain : MonoBehaviour
 		{
             onGround = true;
 		}
+	}
+
+    public void PlayGunSound(AudioClip audio)
+	{
+        gunSource.PlayOneShot(audio);
 	}
 
 	// Update is called once per frame
@@ -117,6 +130,24 @@ public class PlayerMain : MonoBehaviour
         gunBob += gunBobber;
         gunBob %= Mathf.PI * 2;
         gunHolder.position = baseGunPos - new Vector3(0, Mathf.Sin(gunBob) * 0.03f, 0);
+
+
+        // handle our weapon
+        if (Input.GetButtonDown("Fire1"))
+		{
+            currentWeapon.BeginFire(this);
+		}
+        if (Input.GetButton("Fire1"))
+		{
+            currentWeapon.HoldFire(this);
+            holdingFire = true;
+		}
+        if (!Input.GetButton("Fire1") && holdingFire)
+		{
+            currentWeapon.ReleaseFire(this);
+            holdingFire = false;
+		}
+        currentWeapon.Update(this);
 
         onGround = false;
 

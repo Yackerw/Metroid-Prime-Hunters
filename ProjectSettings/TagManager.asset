@@ -14,9 +14,9 @@ TagManager:
   - 
   - 
   - GunLayer
-  - 
-  - 
-  - 
+  - Player
+  - Bullet
+  - PlayerHurtbox
   - 
   - 
   - 
