@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerMain : MonoBehaviour
 {
-    enum PlayerType : int { local, network, bot }
+    public enum PlayerType : int { local, network, bot }
 
 
     Rigidbody player;
