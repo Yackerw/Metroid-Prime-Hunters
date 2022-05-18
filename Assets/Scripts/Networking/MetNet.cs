@@ -15,6 +15,7 @@ public class MetNet : MonoBehaviour
 
 	void Awake()
 	{
+		NetworkingMain.Setup();
 		NetworkingMain.GameLayerJoinOthers = OtherJoinRecv;
 		NetworkingMain.GameLayerJoinSend = JoinSend;
 		NetworkingMain.GameLayerJoinReceive = JoinRecv;
@@ -22,6 +23,11 @@ public class MetNet : MonoBehaviour
 		DontDestroyOnLoad(gameObject);
 		PlayerNetworking.Setup();
 		ObjectNetworking.Setup();
+		PlayerNetworkEvents.Setup();
+
+		// debugging
+		NetworkingMain.StartNetworking(1, "", 5029);
+		//NetworkingMain.StartNetworking(0, "127.0.0.1", 5029);
 	}
 
 	static private void JoinSend(int node)
@@ -39,13 +45,16 @@ public class MetNet : MonoBehaviour
 		}
 		// do misc set up here
 		// setup default name
+		Debug.Log(node);
 		PlayerNetworking.netPlayers[node].name = "Player";
 		PlayerNetworking.netPlayers[node].id = node;
+		Debug.Log("Client connected");
 	}
 
 	static private void JoinRecv()
 	{
 		//PlayerNetworking.FirePlayerEvent(PlayerNetworkEvents.nameEvent, null);
+		Debug.Log("Joined!");
 	}
 
 	static private void OtherJoinRecv(int node)
@@ -85,7 +94,11 @@ public class MetNet : MonoBehaviour
 
 	static private void Disconnect(int node, int reason)
 	{
-		
+		// destroy their player object if they have one
+		if (PlayerNetworking.netPlayers[node].player != null)
+		{
+			Destroy(PlayerNetworking.netPlayers[node].player.gameObject);
+		}
 	}
 
 	public static void SyncObject(NetObj obj, int id, int node = -1)
@@ -155,8 +168,14 @@ public class MetNet : MonoBehaviour
 	}
 
 	// maintain object sync
-	private void FixedUpdate()
+	private void UpdateNetworking()
 	{
+		// update player stuff
+		if (NetworkingMain.ClientNode == -1)
+		{
+			return;
+		}
+		PlayerNetworking.netPlayers[NetworkingMain.ClientNode].NetUpdate();
 		if (NetworkingMain.Host == 1)
 		{
 			// sync objects
@@ -305,9 +324,18 @@ public class MetNet : MonoBehaviour
 		}
 	}
 
+	float networkDelta;
+
 	// networked update
 	private void Update()
 	{
 		NetworkingMain.Update();
+		// TODO: un-hard code this
+		networkDelta += Time.deltaTime;
+		if (networkDelta >= 0.016666f)
+		{
+			networkDelta -= 0.016666f;
+			UpdateNetworking();
+		}
 	}
 }

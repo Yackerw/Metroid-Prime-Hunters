@@ -5,7 +5,7 @@ using System;
 
 public class PlayerNetworking
 {
-    public static PlayerNetworking[] netPlayers = new PlayerNetworking[32];
+    public static PlayerNetworking[] netPlayers = new PlayerNetworking[NetworkingMain.maxClients];
     // confusing name? yes. descriptive of what it is? also yes. networking event for player events.
     public static int playerEventEvent;
     public static int playerEventRelayEvent;
@@ -14,19 +14,24 @@ public class PlayerNetworking
 
     static Func<PlayerNetworking, byte[]>[] PlayerOutEvents = new Func<PlayerNetworking, byte[]>[128];
     static int[] PlayerOEventSizes = new int[128];
-    static Action<int, byte[]>[] PlayerInEvents = new Action<int, byte[]>[128];
+    static Action<PlayerNetworking, byte[]>[] PlayerInEvents = new Action<PlayerNetworking, byte[]>[128];
     static int[] PlayerIEventSizes = new int[128];
     static int PlayerOEvents;
     static int PlayerIEvents;
 
     public string name;
     public int id;
+    public PlayerMain player;
 
 
     public static void Setup()
 	{
         playerEventEvent = NetworkingMain.RegisterPacketType(EventProcessor);
         playerEventRelayEvent = NetworkingMain.RegisterPacketType(EventRelayProcessor);
+        for (int i = 0; i < netPlayers.Length; ++i)
+		{
+            netPlayers[i] = new PlayerNetworking();
+		}
 	}
 
 
@@ -40,7 +45,7 @@ public class PlayerNetworking
     }
 
     // Adds event to receive
-    static public void AddPlayerInEvent(Action<int, byte[]> function, int ArraySize)
+    static public void AddPlayerInEvent(Action<PlayerNetworking, byte[]> function, int ArraySize)
     {
         PlayerInEvents[PlayerIEvents] = function;
         PlayerIEventSizes[PlayerIEvents] = ArraySize;
@@ -64,7 +69,7 @@ public class PlayerNetworking
         int subType = BitConverter.ToInt32(packet, 0);
         byte[] newArr = new byte[packSize - 4];
         Array.Copy(packet, 4, newArr, 0, packSize - 4);
-        PlayerInEvents[subType](node, newArr);
+        PlayerInEvents[subType](netPlayers[node], newArr);
         if (NetworkingMain.Host == 1)
         {
             // relay to other players
@@ -85,8 +90,13 @@ public class PlayerNetworking
                 int subType = BitConverter.ToInt32(packet, 4);
                 byte[] newArr = new byte[packet.Length - 8];
                 Array.Copy(packet, 8, newArr, 0, packet.Length - 8);
-                PlayerInEvents[subType](newNode, newArr);
+                PlayerInEvents[subType](netPlayers[newNode], newArr);
             }
         }
     }
+
+    public void NetUpdate()
+	{
+        FirePlayerEvent(PlayerNetworkEvents.stepEvent, this, false);
+	}
 }

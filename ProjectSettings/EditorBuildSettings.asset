@@ -4,5 +4,11 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 0
+    path: Assets/Scenes/NetworkingTest.unity
+    guid: 8168d02ddfa7c064cb1679f4cf620d06
+  - enabled: 1
+    path: Assets/Metroid Prime Hunters Remake.unity
+    guid: 5b55e2e831b57d9489d0822850e4aa59
   m_configObjects: {}

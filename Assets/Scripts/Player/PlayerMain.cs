@@ -15,6 +15,8 @@ public class PlayerMain : MonoBehaviour
     public Transform camerapos;
     public CapsuleCollider myCollider;
     public PlayerType playerType;
+    public PlayerManager.Characters character;
+    public int playerID;
 
     bool onGround;
     bool canJump;

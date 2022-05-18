@@ -127,6 +127,9 @@ public class NetworkingMain {
 				Sock.Bind(localEndPoint);
                 Clients = new IPEndPoint[maxClients];
                 ClientID = rng.Next();
+                ClientNode = 0;
+                // 0th client is always host
+                ClientsUsed[0] = true;
                 Sock.Blocking = false;
             }
             // Or we're a client, attempt to connect to server, using the IP from IP.txt
@@ -333,7 +336,7 @@ public class NetworkingMain {
                             if (RecvType == 0 && Host == 0)
                             {
                                 ClientNode = RecvNode;
-                                ClientIDs[ClientNode] = RecvID;
+                                ClientIDs[0] = RecvID;
                                 ClientID = BitConverter.ToInt32(packet, 0);
                                 ClientsUsed[ClientNode] = true;
                             }
@@ -485,347 +488,6 @@ public class NetworkingMain {
 			return;
 		}
 		gameLayerPacketProcessing[type](packet, node);
-        /*switch (type)
-        {
-            // case 1: normal, every frame sync
-            case 1:
-                {
-                    PlayerNetworking.ReceivePlayerPosition(packet, node);
-                    // Re-send data if host
-                    if (Host == 1)
-                    {
-                        byte[] ou = new byte[packSize + 4];
-                        Array.Copy(packet, 0, ou, 4, packSize);
-                        Array.Copy(BitConverter.GetBytes(node), 0, ou, 0, 4);
-                        Packet_Send(ou, ou.Length, 2, false);
-                    }
-                }
-            break;
-            // case 2: every frame sync being relayed
-            case 2:
-                {
-                    // we won't be fooled by your trickery!
-                    if (Host == 1)
-                    {
-                        return;
-                    }
-                    int n = BitConverter.ToInt32(packet, 0);
-                    if (n != ClientNode)
-                    {
-                        byte[] posin = new byte[packSize - 4];
-                        Array.Copy(packet, 4, posin, 0, packSize - 4);
-                        PlayerNetworking.ReceivePlayerPosition(posin, n);
-                    }
-                }
-            break;
-            // case 3: game data from connection
-            case 3:
-                {
-                    SyncJoinRecv(packet);
-                }
-            break;
-            // case 4: other players connecting
-            case 4:
-                {
-                    PlayerJoinOthers(BitConverter.ToInt32(packet, 0));
-                }
-                break;
-            // case 5: disconnection
-            case 5:
-                {
-                    if (Host != 1)
-                    {
-                        int n = BitConverter.ToInt32(packet, 0);
-						int reas = BitConverter.ToInt32(packet, 4);
-                        // if we're the ones being disconnected, then do that
-                        if (n == ClientNode)
-                        {
-                            CloseConn(ClientNode, reas);
-                        } else
-                        {
-							GameLayerDisconnect(node, reas);
-                        }
-                    } else
-                    {
-						int reas = BitConverter.ToInt32(packet, 4);
-						CloseConn(node, reas);
-                    }
-                }
-                break;
-            // case 6: player event
-            case 6:
-                {
-                    int subType = BitConverter.ToInt32(packet, 0);
-                    byte[] newArr = new byte[packSize - 4];
-                    Array.Copy(packet, 4, newArr, 0, packSize - 4);
-                    PlayerNetworking.PlayerInEvents[subType](node, newArr);
-                    if (Host == 1)
-                    {
-                        // relay to other players
-                        byte[] newOu = new byte[packSize + 4];
-                        Array.Copy(packet, 0, newOu, 4, packSize);
-                        Array.Copy(BitConverter.GetBytes(node), 0, newOu, 0, 4);
-                        Packet_Send(newOu, newOu.Length, 7);
-                    }
-                }
-                break;
-            // case 7: relayed player events
-            case 7:
-                {
-                    if (Host != 1)
-                    {
-                        int newNode = BitConverter.ToInt32(packet, 0);
-                        if (newNode != ClientNode)
-                        {
-                            int subType = BitConverter.ToInt32(packet, 4);
-                            byte[] newArr = new byte[packet.Length - 8];
-                            Array.Copy(packet, 8, newArr, 0, packet.Length - 8);
-                            PlayerNetworking.PlayerInEvents[subType](newNode, newArr);
-                        }
-                    }
-                }
-                break;
-            // case 8: object step
-            case 8:
-                {
-                    if (Host != 1)
-                    {
-                        int id = BitConverter.ToInt32(packet, 0);
-						if (id > 0 && JourneyNet.netObjects.Count > id && JourneyNet.netObjects[id] != null)
-						{
-							Array.Copy(packet, 4, packet, 0, packet.Length - 4);
-							try
-							{
-								JourneyNet.netObjects[id].NetRecv(packet);
-							} catch
-							{
-								// painful bandaid, but prevents things from breaking
-							}
-						}
-                    }
-                }
-                break;
-            // case 9: object create
-            case 9:
-                {
-                    if (Host != 1)
-                    {
-                        NetLevel.LoadObject(packet, packSize);
-                    }
-                }
-                break;
-            // case 10: object specific network events
-            case 10:
-                {
-                    int id = BitConverter.ToInt32(packet, 0);
-                    int eventType = BitConverter.ToInt32(packet, 4);
-                    byte[] restOfData;
-                    if (packet.Length - 8 > 0)
-                    {
-                        restOfData = new byte[packet.Length - 8];
-                        Array.Copy(packet, 8, restOfData, 0, restOfData.Length);
-                    } else
-                    {
-                        restOfData = null;
-                    }
-                    if (JourneyNet.netObjects.Count > id && JourneyNet.netObjects[id] != null)
-                    {
-						JourneyNet.netObjects[id].NetEvent(restOfData, eventType);
-                    }
-                }
-                break;
-            // case 11: trash an object
-            case 11:
-                {
-                    if (Host != 1 && JourneyManager.sceneType == 2)
-                    {
-                        int id = BitConverter.ToInt32(packet, 0);
-						JourneyNet.netObjects[id].NetClose();
-						JourneyNet.netObjects[id] = null;
-                    }
-                }
-                break;
-            // case 12: level load
-            case 12:
-                {
-                    if (Host != 1 && !PlayerNetworking.players[0].sending)
-                    {
-                        string levelName;
-                        Utilj.StringFromArray(packet, 1, out levelName);
-						// reset netlevel stuff
-						NetLevel.objectSize = new List<int>();
-						NetLevel.objectStore = new List<byte[]>();
-                        if (!Loading.LoadLevel(levelName))
-						{
-							// level doesn't exist, let's ask for it
-							Packet_Send(new byte[1], 1, 14, true);
-							// we failed, disconnect
-							//CloseConn(ClientNode, 3);
-						}
-                    }
-                }
-                break;
-            // case 13: syncing everyone's name on join
-            case 13:
-                {
-                    if (Host != 1)
-                    {
-                        PlayerNetworking.ReceiveNames(packet, node);
-                    }
-                }
-                break;
-			// case 14: someone has requested our current level be sent to them
-			case 14:
-				{
-					if (Host == 1)
-					{
-						PlayerNetworking.players[node].GZI = JourneyManager.stageArchive;
-						PlayerNetworking.players[node].sending = true;
-						PlayerNetworking.players[node].numPackets = PlayerNetworking.players[node].GZI.ms.Length / 256;
-						if (PlayerNetworking.players[node].GZI.ms.Length % 256 != 0)
-						{
-							++PlayerNetworking.players[node].numPackets;
-						}
-						PlayerNetworking.players[node].received = new bool[PlayerNetworking.players[node].numPackets];
-						// tell them how large it will be and to start checking for packets
-						byte[] name = Utilj.StringToArray(PlayerNetworking.players[node].GZI.baseDir);
-						byte[] ou = new byte[8 + name.Length];
-						Utilj.AddToArray(PlayerNetworking.players[node].numPackets, ou, 0);
-						Utilj.AddToArray(PlayerNetworking.players[node].GZI.ms.Length, ou, 4);
-						Array.Copy(name, 0, ou, 8, name.Length);
-						Packet_SendTo(ou, ou.Length, 15, node, true);
-					}
-				}
-				break;
-				// case 15: host is sending us a file, prepare to receive it
-			case 15:
-				{
-					if (Host != 1)
-					{
-						PlayerNetworking.players[0].GZI = new ZIPUtilities.GZInfo();
-						SceneManager.LoadScene("StageDownloading");
-						int num = BitConverter.ToInt32(packet, 0);
-						PlayerNetworking.players[0].numPackets = num;
-						PlayerNetworking.players[0].received = new bool[num];
-						PlayerNetworking.players[0].sending = true;
-						// allocate space for the incoming archive
-						PlayerNetworking.players[0].GZI.ms = new byte[BitConverter.ToInt32(packet, 4)];
-						PlayerNetworking.players[0].GZI.fileDirs = new List<string>();
-						PlayerNetworking.players[0].GZI.unCompFileSize = new List<int>();
-						// and acquire the name
-						string name;
-						Utilj.StringFromArray(packet, 8, out name);
-						PlayerNetworking.players[0].GZI.baseDir = name;
-						// mark us as "in a menu"
-						JourneyManager.sceneType = 0;
-					}
-				}
-				break;
-				// case 16: received part of a file from the host
-			case 16:
-				{
-					if (Host != 1)
-					{
-						NetFileHandler.ReceivePacket(packet, node);
-					}
-				}
-				break;
-			// case 17: client has told us they received a part of a file
-			case 17:
-				{
-					if (Host == 1)
-					{
-						int packNum = BitConverter.ToInt32(packet, 0);
-						if (PlayerNetworking.players[node].sending && PlayerNetworking.players[node].numPackets > packNum && packNum >= 0)
-						{
-							PlayerNetworking.players[node].received[packNum] = true;
-						}
-					}
-				}
-				break;
-			// case 18: host has told us all packets sent. Inform them we got the message, and to re-send dropped ones, or send the metadata if all have been sent successfully
-			case 18:
-				{
-					if (Host != 1)
-					{
-						Packet_Send(new byte[1], 1, 19, true);
-					}
-				}
-				break;
-			// case 19: client has told us we're good to go to re-send packet data, or to send metadata
-			case 19:
-				{
-					if (Host == 1)
-					{
-						NetFileHandler.HostFinish(node);
-					}
-				}
-				break;
-			// case 20: we are receiving metadata from the host about the file we have received
-			case 20:
-				{
-					if (Host != 1 && PlayerNetworking.players[0].sending)
-					{
-						PlayerNetworking.players[0].GZI.unCompFileSize.Add(BitConverter.ToInt32(packet, 0));
-						string fName;
-						Utilj.StringFromArray(packet, 4, out fName);
-						PlayerNetworking.players[0].GZI.fileDirs.Add(fName);
-					}
-				}
-				break;
-			// case 21: we've received everything necessary to create the file
-			case 21:
-				{
-					if (Host != 1 && PlayerNetworking.players[0].sending)
-					{
-						ZIPUtilities.ZipToFolder(PlayerNetworking.players[0].GZI);
-						// now free everything
-						PlayerNetworking.players[0].GZI = new ZIPUtilities.GZInfo();
-						PlayerNetworking.players[0].sending = false;
-						PlayerNetworking.players[0].bytesReceived = 0;
-					}
-				}
-				break;
-			// case 22: we've received sync info on a certain sync object
-			case 22:
-				{
-					if (Host != 1)
-					{
-						int id = BitConverter.ToInt32(packet, 0);
-						// error proof
-						if (id >= 0 && id < CullingManager.syncObjects.Count)
-						{
-							CullingManager.syncObjects[id].UpdateSync(packet, packSize);
-						}
-					}
-				}
-				break;
-			// case 23: trigger activated
-			case 23:
-				{
-					int id = BitConverter.ToInt32(packet, 0);
-					if (id >= 0 && id < CullingManager.groups.Count)
-					{
-						GeneralTrigger gt = CullingManager.groups[id].gameObject.GetComponent<GeneralTrigger>();
-						if (gt != null)
-						{
-							PlayerInteract.TriggerInteraction(gt.gameObject, PlayerMain.localPlayer.GetComponent<PlayerMain>(), true);
-							if (Host == 1)
-							{
-								// relay it
-								for (int i = 0; i < ClientsUsed.Length; ++i)
-								{
-									if (ClientsUsed[i] && i != node)
-									{
-										Packet_SendTo(packet, packet.Length, 23, i, true);
-									}
-								}
-							}
-						}
-					}
-				}
-				break;
-        }*/
     }
 
     static private void SyncJoinRecv(byte[] data, int node)
@@ -898,7 +560,7 @@ public class NetworkingMain {
         // If we're the host, then attempt to send out to the client. otherwise, we're only connected to the host, so we send to them regardless
         if (Host == 1)
         {
-            Array.Copy(BitConverter.GetBytes(node), 0, outt, 4, 4);
+            //Array.Copy(BitConverter.GetBytes(node), 0, outt, 4, 4);
             // If it's an important packet, let's make note to re-send it as well as its ID
             if (important)
             {
@@ -985,7 +647,7 @@ public class NetworkingMain {
             {
                 if (ClientsUsed[i])
                 {
-                    Array.Copy(BitConverter.GetBytes(i), 0, outt, 4, 4);
+                    //Array.Copy(BitConverter.GetBytes(i), 0, outt, 4, 4);
                     // If it's an important packet, let's make note to re-send it as well as its ID
                     if (important)
                     {

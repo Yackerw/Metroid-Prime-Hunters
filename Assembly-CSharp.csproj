@@ -71,6 +71,7 @@
     <Compile Include="Assets\Scripts\Player\Guns\PowerBeam\PowerBeam.cs" />
     <Compile Include="Assets\Scripts\Player\Guns\PowerBeam\PowerBeamBullet.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerMain.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
