@@ -5,7 +5,7 @@ using UnityEngine;
 public class PlayerManager
 {
     public enum Characters : int { None, Samus }
-    static void SpawnPlayer(PlayerMain.PlayerType type, Characters character, Vector3 position, PlayerNetworking owner)
+    static public void SpawnPlayer(PlayerMain.PlayerType type, Characters character, Vector3 position, PlayerNetworking owner)
 	{
 		GameObject playerObj = GameObject.Instantiate((GameObject)Resources.Load("Objects/Player/Player"));
 		owner.player = playerObj.GetComponent<PlayerMain>();
@@ -18,5 +18,6 @@ public class PlayerManager
 			owner.player.armCannon = armCannon.transform.GetChild(0).gameObject;
 		}
 		owner.player.playerID = owner.id;
+		owner.player.playerType = type;
 	}
 }

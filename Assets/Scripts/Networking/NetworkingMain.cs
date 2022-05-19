@@ -99,6 +99,7 @@ public class NetworkingMain {
 
     static public void StartNetworking(int type, string ip = "", int port = 5029)
     {
+        ClientsUsed = new bool[maxClients];
         // If our sock hasn't previously been set up, do initialization
         if (Sock == null)
         {
@@ -166,7 +167,6 @@ public class NetworkingMain {
 				}
             }
         }
-        ClientsUsed = new bool[maxClients];
         ImportantStack = new byte[maxClients, 8192][];
         ImportantStackPos = new int[maxClients];
         SockTimeout = new float[maxClients];
@@ -244,9 +244,14 @@ public class NetworkingMain {
 				// I could probably reduce this to an int16, but oh well
                 int RecvID = System.BitConverter.ToInt32(packet, 0);
                 int RecvNode = System.BitConverter.ToInt32(packet, 4);
+                int RecvType = System.BitConverter.ToInt16(packet, 11);
+                // i'm legitimately confused here, this is a hacky as fuck fix
+                if (Host != 1 && RecvType != 0)
+				{
+                    RecvNode = 0;
+				}
                 int RecvImportant = packet[8];
                 int RecvImpID = System.BitConverter.ToInt16(packet, 9);
-                int RecvType = System.BitConverter.ToInt16(packet, 11);
                 // Copy our actual packet data to be readable over here
                 Array.Copy(packet, 13, packet, 0, packSize - 13);
 				packSize -= 13;
@@ -339,6 +344,7 @@ public class NetworkingMain {
                                 ClientIDs[0] = RecvID;
                                 ClientID = BitConverter.ToInt32(packet, 0);
                                 ClientsUsed[ClientNode] = true;
+                                ClientsUsed[0] = true;
                             }
                         }
                     }
@@ -436,7 +442,7 @@ public class NetworkingMain {
                             PStartPos %= 8192;
                         }
                         SockTimeout[i] += Time.deltaTime;
-                        if (SockTimeout[i] > 20.0f)
+                        if (SockTimeout[i] > 20.0f && i != 0)
                         {
                             // Eventually close socket here
                             CloseConn(i);
@@ -449,30 +455,30 @@ public class NetworkingMain {
                 if (ClientNode != -1)
                 {
                     // Re-send our important packets if deemed lost
-                    int PStartPos = ImportantStackPos[ClientNode] - 4096;
+                    int PStartPos = ImportantStackPos[0] - 4096;
                     if (PStartPos < 0)
                     {
                         PStartPos = 8192 + PStartPos;
                     }
-                    while (PStartPos != ImportantStackPos[ClientNode])
+                    while (PStartPos != ImportantStackPos[0])
                     {
-                        if (ImportantStackUsed[ClientNode, PStartPos])
+                        if (ImportantStackUsed[0, PStartPos])
                         {
-                            PacketTimeout[ClientNode, PStartPos] += Time.deltaTime;
-                            if (PacketTimeout[ClientNode, PStartPos] > 0.3f)
+                            PacketTimeout[0, PStartPos] += Time.deltaTime;
+                            if (PacketTimeout[0, PStartPos] > 0.3f)
                             {
-                                PacketTimeout[ClientNode, PStartPos] = 0;
-                                Sock.SendTo(ImportantStack[ClientNode, PStartPos], localEndPoint);
+                                PacketTimeout[0, PStartPos] = 0;
+                                Sock.SendTo(ImportantStack[0, PStartPos], localEndPoint);
                             }
                         }
                         PStartPos += 1;
                         PStartPos %= 8192;
                     }
-                    SockTimeout[ClientNode] += Time.deltaTime;
-                    if (SockTimeout[ClientNode] > 20.0f)
+                    SockTimeout[0] += Time.deltaTime;
+                    if (SockTimeout[0] > 20.0f)
                     {
                         // Eventually close socket here
-                        CloseConn(ClientNode);
+                        CloseConn(0);
                     }
                 }
             }
@@ -591,7 +597,7 @@ public class NetworkingMain {
         } else
         {
             // Haven't connected, abort
-            if (ClientNode == -1)
+            if (0 == -1)
             {
                 return;
             }
@@ -599,24 +605,24 @@ public class NetworkingMain {
             if (important)
             {
                 // Close connection if we're too far into the stack
-                int oldpos = ImportantStackPos[ClientNode] - 4096;
+                int oldpos = ImportantStackPos[0] - 4096;
                 if (oldpos < 0)
                 {
                     oldpos = 8192 + oldpos;
                 }
-                if (ImportantStackUsed[ClientNode, oldpos])
+                if (ImportantStackUsed[0, oldpos])
                 {
                     // close connection
-                    CloseConn(ClientNode);
+                    CloseConn(0);
                     return;
                 }
                 // Copy our position in the stack to the packet, then update timeout and stack position
-                Array.Copy(BitConverter.GetBytes((short)ImportantStackPos[ClientNode]), 0, outt, 9, 2);
-                ImportantStackUsed[ClientNode, ImportantStackPos[ClientNode]] = true;
-                ImportantStack[ClientNode, ImportantStackPos[ClientNode]] = outt;
-                PacketTimeout[ClientNode, ImportantStackPos[ClientNode]] = 0;
-                ImportantStackPos[ClientNode] += 1;
-                ImportantStackPos[ClientNode] %= 8192;
+                Array.Copy(BitConverter.GetBytes((short)ImportantStackPos[0]), 0, outt, 9, 2);
+                ImportantStackUsed[0, ImportantStackPos[0]] = true;
+                ImportantStack[0, ImportantStackPos[0]] = outt;
+                PacketTimeout[0, ImportantStackPos[0]] = 0;
+                ImportantStackPos[0] += 1;
+                ImportantStackPos[0] %= 8192;
             }
             Sock.SendTo(outt, localEndPoint);
         }
@@ -643,7 +649,7 @@ public class NetworkingMain {
         // If we're the host, then attempt to send out to all clients. otherwise just send to the host
         if (Host == 1)
         {
-            for (int i = 0; i < maxClients; i += 1)
+            for (int i = 1; i < maxClients; i += 1)
             {
                 if (ClientsUsed[i])
                 {
@@ -689,24 +695,24 @@ public class NetworkingMain {
             if (important)
             {
                 // Close connection if we're too far into the stack
-                int oldpos = ImportantStackPos[ClientNode] - 4096;
+                int oldpos = ImportantStackPos[0] - 4096;
                 if (oldpos < 0)
                 {
                     oldpos = 8192 + oldpos;
                 }
-                if (ImportantStackUsed[ClientNode, oldpos])
+                if (ImportantStackUsed[0, oldpos])
                 {
                     // close connection
-                    CloseConn(ClientNode);
+                    CloseConn(0);
                     return;
                 }
                 // Copy our position in the stack to the packet, then update timeout and stack position
-                Array.Copy(BitConverter.GetBytes(ImportantStackPos[ClientNode]), 0, outt, 9, 2);
-                ImportantStackUsed[ClientNode, ImportantStackPos[ClientNode]] = true;
-                ImportantStack[ClientNode, ImportantStackPos[ClientNode]] = outt;
-                PacketTimeout[ClientNode, ImportantStackPos[ClientNode]] = 0;
-                ImportantStackPos[ClientNode] += 1;
-                ImportantStackPos[ClientNode] %= 8192;
+                Array.Copy(BitConverter.GetBytes(ImportantStackPos[0]), 0, outt, 9, 2);
+                ImportantStackUsed[0, ImportantStackPos[0]] = true;
+                ImportantStack[0, ImportantStackPos[0]] = outt;
+                PacketTimeout[0, ImportantStackPos[0]] = 0;
+                ImportantStackPos[0] += 1;
+                ImportantStackPos[0] %= 8192;
             }
             Sock.SendTo(outt, localEndPoint);
         }

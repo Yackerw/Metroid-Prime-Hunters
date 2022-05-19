@@ -24,9 +24,14 @@ public class MetNet : MonoBehaviour
 		PlayerNetworking.Setup();
 		ObjectNetworking.Setup();
 		PlayerNetworkEvents.Setup();
+		LevelNetworking.Setup();
 
 		// debugging
 		NetworkingMain.StartNetworking(1, "", 5029);
+		if (NetworkingMain.Host == 1)
+		{
+			GameManager.ChangeLevel("Metroid Prime Hunters Remake");
+		}
 		//NetworkingMain.StartNetworking(0, "127.0.0.1", 5029);
 	}
 
@@ -48,6 +53,12 @@ public class MetNet : MonoBehaviour
 		Debug.Log(node);
 		PlayerNetworking.netPlayers[node].name = "Player";
 		PlayerNetworking.netPlayers[node].id = node;
+		LevelNetworking.SyncLevelTo(node);
+		// spawn the player object if we're in stage
+		if (GameManager.gameState == GameManager.GameState.Multiplayer)
+		{
+			PlayerManager.SpawnPlayer(PlayerMain.PlayerType.network, PlayerManager.Characters.Samus, Vector3.zero, PlayerNetworking.netPlayers[node]);
+		}
 		Debug.Log("Client connected");
 	}
 

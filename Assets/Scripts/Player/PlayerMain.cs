@@ -39,7 +39,8 @@ public class PlayerMain : MonoBehaviour
     {
         player=GetComponent<Rigidbody>();
         camera = Camera.main.transform; //.main gets the camera, .transform gets the transform of the camera
-        baseGunPos = gunHolder.position;
+        if (playerType == PlayerType.local)
+            baseGunPos = gunHolder.position;
         currentWeapon = new PowerBeam();
     }
 

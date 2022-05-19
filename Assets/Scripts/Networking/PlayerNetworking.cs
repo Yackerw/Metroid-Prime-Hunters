@@ -31,6 +31,7 @@ public class PlayerNetworking
         for (int i = 0; i < netPlayers.Length; ++i)
 		{
             netPlayers[i] = new PlayerNetworking();
+            netPlayers[i].id = i;
 		}
 	}
 
