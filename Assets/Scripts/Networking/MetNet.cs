@@ -8,6 +8,7 @@ public class MetNet : MonoBehaviour
 {
 
 	public static List<NetObj> netObjects = new List<NetObj>();
+	public static List<bool> netObjectsUsed = new List<bool>();
 
 	static int netObjInd = 0;
 
@@ -27,12 +28,12 @@ public class MetNet : MonoBehaviour
 		LevelNetworking.Setup();
 
 		// debugging
-		NetworkingMain.StartNetworking(1, "", 5029);
+		//NetworkingMain.StartNetworking(1, "", 5029);
 		if (NetworkingMain.Host == 1)
 		{
 			GameManager.ChangeLevel("Metroid Prime Hunters Remake");
 		}
-		//NetworkingMain.StartNetworking(0, "127.0.0.1", 5029);
+		NetworkingMain.StartNetworking(0, "127.0.0.1", 5029);
 	}
 
 	static private void JoinSend(int node)
@@ -152,7 +153,18 @@ public class MetNet : MonoBehaviour
 	public static int RegisterObject(NetObj no)
 	{
 		if (NetworkingMain.Host != 1) return -1;
+		// if we have a free slot, use it
+		for (int i = 0; i < netObjInd; ++i)
+		{
+			if (!netObjectsUsed[i])
+			{
+				netObjects[i] = no;
+				SyncObject(no, i);
+				return i;
+			}
+		}
 		netObjects.Add(no);
+		netObjectsUsed.Add(true);
 		netObjInd++;
 		SyncObject(no, netObjInd - 1);
 		return netObjInd - 1;
@@ -172,6 +184,7 @@ public class MetNet : MonoBehaviour
 	public static void RemoveObject(int id)
 	{
 		netObjects[id] = null;
+		netObjectsUsed[id] = false;
 		if (NetworkingMain.Host == 1)
 		{
 			NetworkingMain.Packet_Send(BitConverter.GetBytes(id), 4, ObjectNetworking.objDestroyEvent, true);
@@ -192,7 +205,7 @@ public class MetNet : MonoBehaviour
 			// sync objects
 			for (int i = 0; i < netObjects.Count; i++)
 			{
-				if (netObjects[i] != null)
+				if (netObjects[i] != null && netObjectsUsed[i])
 				{
 					byte[] retval = netObjects[i].NetStep();
 					if (retval != null && retval.Length != 0)

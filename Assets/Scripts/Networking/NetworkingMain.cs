@@ -217,7 +217,7 @@ public class NetworkingMain {
 			}
 			else
 			{
-				GameLayerDisconnect(node, reas);
+				GameLayerDisconnect(n, reas);
 			}
 		}
 		else

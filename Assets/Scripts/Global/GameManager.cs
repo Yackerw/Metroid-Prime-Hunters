@@ -30,6 +30,8 @@ public class GameManager : MonoBehaviour
 			LevelNetworking.SyncLevel();
 		}
 		instance.sceneLoaded = 0;
+		MetNet.netObjectsUsed = new List<bool>();
+		MetNet.netObjects = new List<NetObj>();
 	}
 
 	static public void SceneFinishedLoading(Scene scene, LoadSceneMode lsm)

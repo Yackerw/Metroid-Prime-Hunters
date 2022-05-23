@@ -55,7 +55,7 @@ public class PowerBeam : Gun
 		{
 			FireShot(player, 0);
 		}
-		if (fireAmnt >= 3)
+		if (fireAmnt >= 2)
 		{
 			charging = true;
 		}
@@ -65,7 +65,14 @@ public class PowerBeam : Gun
 	{
 		if (timeSinceRelease <= 0)
 		{
-			timeSinceRelease = 0.2f;
+			if (fireTimer <= 0.8f)
+			{
+				timeSinceRelease = 0.2f - (fireTimer % 0.2f);
+			}
+			else
+			{
+				timeSinceRelease = 0.2f;
+			}
 		}
 	}
 

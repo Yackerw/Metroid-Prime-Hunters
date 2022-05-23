@@ -15,7 +15,7 @@ public class ObjectNetworking {
 
 	static public void Setup()
 	{
-		//objCreateEvent = NetworkingMain.RegisterPacketType(ObjectCreate);
+		objCreateEvent = NetworkingMain.RegisterPacketType(ObjectCreate);
 		objStepEvent = NetworkingMain.RegisterPacketType(ObjectStep);
 		objEventEvent = NetworkingMain.RegisterPacketType(ObjectEventProcessor);
 		objDestroyEvent = NetworkingMain.RegisterPacketType(ObjectDestroy);
@@ -35,13 +35,44 @@ public class ObjectNetworking {
 		}
 	}*/
 
-	/*static private void ObjectCreate(byte[] packet, int node)
+	static private void ObjectCreate(byte[] packet, int node)
 	{
+		// TODO: check for loading, wait for it to finish before creating the objects
 		if (NetworkingMain.Host != 1)
 		{
-			NetLevel.LoadObject(packet, packet.Length);
+			// create object
+			int objId = BitConverter.ToInt32(packet, 0);
+			string assetToCreate;
+			int baseOffs = Utilj.StringFromArray(packet, 4, out assetToCreate);
+			Vector3 objPos = Utilj.ReadVector3Array(packet, baseOffs);
+			Quaternion objRot = Utilj.ReadQuaternionArray(packet, baseOffs + 12);
+			int parent = BitConverter.ToInt32(packet, baseOffs + 12 + 16);
+			// now create the actual thing and register it to the array
+			GameObject newObj = GameObject.Instantiate((GameObject)Resources.Load("Objects/" + assetToCreate));
+			NetObj no = newObj.GetComponentInChildren<NetObj>();
+			newObj.transform.position = objPos;
+			newObj.transform.rotation = objRot;
+			no.id = objId;
+			no.parent = parent;
+			if (parent != -1 && MetNet.netObjects[parent] != null)
+			{
+				newObj.transform.parent = MetNet.netObjects[parent].transform;
+			}
+			while (objId >= MetNet.netObjects.Count)
+			{
+				MetNet.netObjects.Add(null);
+				MetNet.netObjectsUsed.Add(false);
+			}
+			MetNet.netObjects[objId] = no;
+			MetNet.netObjectsUsed[objId] = true;
+			if (packet.Length - (baseOffs + 32) != 0)
+			{
+				byte[] objSpawnVariables = new byte[packet.Length - (baseOffs + 32)];
+				Array.Copy(packet, baseOffs + 32, objSpawnVariables, 0, packet.Length - (baseOffs + 32));
+				no.SetSpawnVariables(packet);
+			}
 		}
-	}*/
+	}
 
 	static private void ObjectStep(byte[] packet, int node)
 	{
@@ -88,8 +119,12 @@ public class ObjectNetworking {
 		if (NetworkingMain.Host != 1 /*&& JourneyManager.sceneType == 2*/)
 		{
 			int id = BitConverter.ToInt32(packet, 0);
-			MetNet.netObjects[id].NetClose();
-			MetNet.netObjects[id] = null;
+			if (MetNet.netObjects[id] != null)
+			{
+				MetNet.netObjects[id].NetClose();
+				MetNet.netObjects[id] = null;
+			}
+			MetNet.netObjectsUsed[id] = false;
 		}
 	}
 }

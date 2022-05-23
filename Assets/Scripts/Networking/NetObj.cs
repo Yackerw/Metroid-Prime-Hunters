@@ -30,7 +30,7 @@ public class NetObj : MonoBehaviour
         {
             if (NetworkingMain.Host == 1)
             {
-                //id = MetNet.RegisterObject(this);
+                id = MetNet.RegisterObject(this);
             }
             // orphaned object on client, nuke
             if (NetworkingMain.Host == 0 && id == -1)
